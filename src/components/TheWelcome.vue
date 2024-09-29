@@ -8,8 +8,11 @@
 import { onMounted, ref } from "vue";
 import * as THREE from "three";
 
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+
 const container = ref<HTMLDivElement | null>(null);
 const canvasElement = ref<HTMLCanvasElement | null>(null);
+let controls: OrbitControls | null = null;
 
 onMounted(() => {
   if (container.value) {
@@ -35,14 +38,53 @@ onMounted(() => {
     camera.lookAt(sphere.position);
 
     // Создание источника света
-    const light = new THREE.PointLight(0xffffff, 1, 100);
-    light.position.set(0, 0, 5);
-    scene.add(light);
+
+    const ambientLight = new THREE.AmbientLight(0x404040); // Ambient light
+    scene.add(ambientLight);
+
+    const spotLight = new THREE.SpotLight(0xffffff);
+    spotLight.position.set(0, 2, 0); // Поместите источник света внутрь комнаты
+    spotLight.intensity = 1.5; // Увеличиваем яркость источника света
+    spotLight.castShadow = true;
+    spotLight.shadow.mapSize.width = 1024;
+    spotLight.shadow.mapSize.height = 1024;
+    spotLight.shadow.camera.near = 1;
+    spotLight.shadow.camera.far = 10;
+    scene.add(spotLight);
+
+    // Добавляем дополнительное диффузное освещение
+    const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x404040, 0.6);
+    scene.add(hemisphereLight);
+
+    // Create a room
+    const roomGeometry = new THREE.BoxGeometry(6, 3, 0.3);
+    const roomMaterial = new THREE.MeshPhongMaterial({ color: 0x808080 }); // Grey color
+    const room = new THREE.Mesh(roomGeometry, roomMaterial);
+    room.position.set(0, 1.5, -3);
+    scene.add(room);
+
+    // Create a window
+    const windowGeometry = new THREE.BoxGeometry(2, 1.5, 0.1);
+    const windowMaterial = new THREE.MeshPhongMaterial({ color: 0xcccccc });
+    const window = new THREE.Mesh(windowGeometry, windowMaterial);
+    window.position.set(2, 1.5, 3.01);
+    scene.add(window);
+
+    // Create a door
+    const doorGeometry = new THREE.BoxGeometry(0.9, 2.1, 0.1);
+    const doorMaterial = new THREE.MeshPhongMaterial({ color: 0x8b4513 });
+    const door = new THREE.Mesh(doorGeometry, doorMaterial);
+    door.position.set(2, 1.05, -3); // Поместите дверь параллельно окну
+
+    scene.add(door);
 
     // Создание рендерера
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(container.value.offsetWidth, container.value.offsetHeight);
     container.value.appendChild(renderer.domElement);
+
+    // Создание управления камерой
+    controls = new OrbitControls(camera, renderer.domElement);
 
     // Сохранение ссылки на canvas-элемент
     canvasElement.value = renderer.domElement;
@@ -54,8 +96,7 @@ onMounted(() => {
     // Анимация
     function animate() {
       requestAnimationFrame(animate);
-      sphere.rotation.x += 0.01;
-      sphere.rotation.y += 0.01;
+      controls?.update();
       renderer.render(scene, camera);
     }
     animate();
