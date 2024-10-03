@@ -1,15 +1,25 @@
 <template>
   <div class="container">
     <div ref="container" class="three-scene"></div>
+    <div class="controls">
+      <p>Измените размеры двери</p>
+      <label for="niche-width">Ширина двери:</label>
+      <input type="number" id="niche-width" v-model.number="doorWidth" />
+      <label for="niche-height">Высота двери:</label>
+      <input type="number" id="niche-height" v-model.number="doorHeight" />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import woodTexture from "@/assets/images/wood-door.jpg";
 import wallTextureUrl from "@/assets/images/bricks-wall.jpg";
+
+const doorWidth = ref(0.8);
+const doorHeight = ref(2.1);
 
 const container = ref<HTMLDivElement | null>(null);
 const canvasElement = ref<HTMLCanvasElement | null>(null);
@@ -185,12 +195,30 @@ onMounted(() => {
     // создание нишы двери wallA
     const nicheGeometry = new THREE.BoxGeometry(1.8, 2.2, 0.4);
     nicheGeometry.translate(0, 2.25, 0);
-    // nicheGeometry.rotateY(Math.PI / 4);
-    const roomMaterial = new THREE.MeshPhongMaterial({ color: 0x808080 }); // Grey color
     const niche = new THREE.Mesh(nicheGeometry, material);
-    // niche.position.set(0, 6.5, -3);
     niche.position.set(2, 2, 2);
     scene.add(niche);
+
+    // const doorGeometry = new THREE.BoxGeometry(0.8, 2.1, 0.1);
+    const doorGeometry = new THREE.BoxGeometry(
+      doorWidth.value,
+      doorHeight.value,
+      0.1
+    );
+
+    doorGeometry.translate(0, 2.25, 0);
+
+    const door = new THREE.Mesh(doorGeometry, material);
+    door.position.set(0.5, 2, 2.15);
+    const updateDoorSize = () => {
+      if (door) {
+        door.scale.set(doorWidth.value / 1.8, doorHeight.value / 2.2, 1);
+      }
+    };
+
+    watch([doorWidth, doorHeight], updateDoorSize);
+
+    scene.add(door);
 
     // door knob
     const doorKnobGeometry = new THREE.SphereGeometry(0.06, 12, 12); // Радиус 0.1, 16 сегментов по ширине и высоте
